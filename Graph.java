@@ -1,84 +1,285 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Graph {
 	
-      HashMap<String, ArrayList<String>> enlaces;
+      HashMap<String, Integer> th;
+      String[] keys;
+      ArrayList<Integer>[] adjList;
 	
+      
+      public void crearGrafo(MapaAutores autores, MapaPubli publicaciones) {
+	  	// Post: crea el grafo desde la lista de autores
+		//       Los nodos son nombres de autores
+    	  
+   	    // Paso 1: llenar th�
+   	    th = new HashMap<String, Integer>();
+   	    int cont = 0;
+   	    for (Autor a : autores.getMapaAutores().values()) {
+   	    	if (!th.containsKey(a.getNombre())) {
+   	    		th.put(a.getNombre(), cont);
+   	    		cont++;
+        	}
+	    }
 
-      public void crearGrafo(ListaWebs lista){
-		// Post: crea el grafo desde la lista de webs
-		//       Los nodos son nombres de páginas web		
-		
-            // COMPLETAR CÓDIGO
+   	    // Paso 2: llenar keys�
+   	    keys = new String[th.size()];
+   	    for (String nombreAutor : th.keySet()) {
+   	    	keys[th.get(nombreAutor)] = nombreAutor;
+    	}
+
+   	    // Paso 3: llenar adjList�
+   	    adjList = new ArrayList[th.size()];
+   	    for (int i = 0; i < adjList.length; i++) {
+   	    	adjList[i] = new ArrayList<Integer>();
+    	}
+
+	    // Recorremos cada publicación y conectamos a todos sus autores entre sí
+	    HashMap<String, ArrayList<String>> mapaPublisAutor = publicaciones.getMapaPublisAutor();
+	    for (String idPubli : mapaPublisAutor.keySet()) {
+	        ArrayList<String> autoresPubli = mapaPublisAutor.get(idPubli);
+	        for (int i = 0; i < autoresPubli.size(); i++) {
+	            Autor autor1 = autores.buscarAutor(autoresPubli.get(i));  
+	            if (autor1 != null && th.containsKey(autor1.getNombre())) {
+	                int pos1 = th.get(autor1.getNombre());
+	                for (int j = i + 1; j < autoresPubli.size(); j++) {
+	                    Autor autor2 = autores.buscarAutor(autoresPubli.get(j));
+	                    if (autor2 != null && th.containsKey(autor2.getNombre())) {
+	                        int pos2 = th.get(autor2.getNombre());
+	                        if (!adjList[pos1].contains(pos2)) {
+	                            adjList[pos1].add(pos2);
+	                        }
+	                        if (!adjList[pos2].contains(pos1)) {
+	                            adjList[pos2].add(pos1);
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	    }
 	}
+
+
+
 	
 	public void print(){
-	   for (String web : enlaces.keySet()){
-		System.out.print("Element: " + web + " >>> ");
-		for (String saliente : enlaces.get(web))  System.out.print(saliente + " ### ");
+	   for (int i = 0; i < adjList.length; i++){
+		System.out.print("Element: " + i + " " + keys[i] + " --> ");
+		for (int k: adjList[i])  System.out.print(keys[k] + " ### ");
 		
 		System.out.println();
 	   }
 	}
 	
 	public boolean estanConectados1(String a1, String a2){
-		Queue<String> porExaminar = new LinkedList<String>();
-		
-		boolean enc = false;
-
-
-
-                 // COMPLETAR CÓDIGO
-		
-		return enc;
-
+	    if(!th.containsKey(a1) || !th.containsKey(a2)) {
+	        return false;
+	    }
+	    if(a1.equals(a2)) {
+	        return true;
+	    }  
+	    Queue<Integer> porExaminar = new LinkedList<Integer>();
+	    int pos1 = th.get(a1);
+	    int pos2 = th.get(a2);
+	    boolean[] examinados = new boolean[th.size()];
+	    porExaminar.add(pos1);
+	    examinados[pos1] = true;
+	    while(!porExaminar.isEmpty()) {
+	        int actual = porExaminar.remove();
+	        if(actual == pos2) {
+	            return true;
+	        }
+	        for(int vecino : adjList[actual]) {
+	            if(!examinados[vecino]) {
+	                porExaminar.add(vecino);
+	                examinados[vecino] = true;
+	            }
+	        }
+	    }
+	    return false;
 	}
-	
-	public ArrayList<String> estanConectados2(String a1, String a2) {
-	       
-	       // COMPLETAR CÓDIGO
-	       
-	       return null;
-	
-	}
-	
-       public HashMap<String, double> calcularRandomWalkRank(int nTests) {
-		double d = 0.85; // damping factor
-		Random r = new Random();
-		
-	       // COMPLETAR CÓDIGO
 
-       }
-       
-       
-       public HashMap<String, double> calcularPageRank() {
-		boolean trace = false; // tracing the pagerank algorithm
-		boolean damping = true; // tracing the pagerank algorithm
-			
-	       // COMPLETAR CÓDIGO
-
-       }
-       
-       public void imprimirLosDeMejorPageRank(double[] pr, int n) { // inefficient but valid!
-       // Post: imprime los n elementos de mayor valor.
-       //       Es ineficiente porque calcula los máximos consecutivamente, y borra el máximo anterior, es decir, borra los valores de entrada
-       //       Puede ser útil para visualizar los resultados
-		for (int x = 1; x <= n; x++) {
-			double max = -1;
-			int iMax = -1;
-			for (int j = 0; j < pr.length; j++)
-				if (pr[j] > max) {
-					max = pr[j];
-					iMax = j;
-				}
-			System.out.println("The " + x + "th best element is "
-					+ id2String[iMax] + " with value " + max);
-			pr[iMax] = -1; // delete the maximum
+	public ArrayList<String> estanConectados2(String a1, String a2){
+		ArrayList<String> rdo = new ArrayList<String>();
+		if(!th.containsKey(a1) || !th.containsKey(a2)) {
+			return rdo;
 		}
+		if(a1.equals(a2)) {
+			rdo.add(a1);
+			return rdo;
+		}
+		HashMap<String, String> mapa = new HashMap<String, String>();
+		mapa.put(a1, a2);
+		Queue<Integer> porExaminar = new LinkedList<Integer>();
+		int pos1 = th.get(a1);
+		int pos2 = th.get(a2);
+		boolean enc = false;
+		boolean[] examinados = new boolean[th.size()];
+		porExaminar.add(pos1);
+		while(!enc && !porExaminar.isEmpty()) {
+			int actual = porExaminar.remove();
+			if(actual == pos2) {
+				enc = true;
+			}else {
+				examinados[actual] = true;
+				for (int j: adjList[actual]) {
+					if(!examinados[j]) {
+						porExaminar.add(j);
+						mapa.put(keys[j], keys[actual]);
+					}
+				}
+			}
+		}
+		if(enc) {
+			rdo.add(a2);
+			String nom1 = "";
+			String nom2 = a2;
+			while(!nom1.equals(a1)) {
+				nom1 = mapa.get(nom2);
+				rdo.add(nom1);
+				nom2 = nom1;
+			}
+		}
+		return rdo;
+
 	}
 	
+	
+	public HashMap<String, Double> randomWalkPageRank(){
+	    HashMap<String, Double> resul = new HashMap<>();
+	    Random aleatorio = new Random(System.currentTimeMillis());
+	    int total = 0;
+	    
+	    // Inicializar contador de visitas a 0 para todos los nodos
+	    for(String autor: th.keySet()) {
+	        resul.put(autor, 0.0);
+	    }
+	    
+	    // Realizar un random walk desde cada nodo del grafo
+	    for(String autorInicial: th.keySet()) {
+	        HashSet<String> examinados = new HashSet<>();
+	        String autorActual = autorInicial;
+	        boolean continuarRecorrido = true;
+	        
+	        // Contar visita al nodo inicial
+	        int visitas = resul.get(autorActual).intValue();
+	        visitas++;
+	        total++;
+	        resul.put(autorActual, (double)visitas);
+	        examinados.add(autorActual);
+
+	        while(continuarRecorrido) {
+	            // Generar número aleatorio para decidir si continuar (85% probabilidad)
+	            int prob = aleatorio.nextInt(100);
+	            
+	            if(prob >= 85) {
+	                // El usuario decide terminar (15% de probabilidad)
+	                continuarRecorrido = false;
+	            } else {
+	                int pos = th.get(autorActual);
+	                
+	                // Verificar si el nodo tiene enlaces salientes
+	                if(adjList[pos].size() == 0) {
+	                    continuarRecorrido = false;
+	                } else {
+	                    // Seleccionar ALEATORIAMENTE uno de los enlaces salientes
+	                    int indiceAleatorio = aleatorio.nextInt(adjList[pos].size());
+	                    String siguienteAutor = keys[adjList[pos].get(indiceAleatorio)];
+	                    
+	                    // Verificar si ya fue visitado en este recorrido
+	                    if(examinados.contains(siguienteAutor)) {
+	                        continuarRecorrido = false;
+	                    } else {
+	                        autorActual = siguienteAutor;
+	                        examinados.add(autorActual);
+	                        
+	                        visitas = resul.get(autorActual).intValue();
+	                        visitas++;
+	                        total++;
+	                        resul.put(autorActual, (double)visitas);
+	                    }
+	                }
+	            }
+	        }
+	    }
+
+	    // Normalizar los resultados dividiendo por el total de accesos
+	    for(String autor: resul.keySet()) {
+	        double x = resul.get(autor) / total;
+	        resul.put(autor, x);
+	    }
+	    
+	    return resul;
+	}
+	
+	
+	public HashMap<String, Double> pageRank(){
+	    HashMap<String, Double> rankings = new HashMap<>();
+	    int totalNodos = th.keySet().size();
+	    double factorAmortiguacion = 0.85;
+	    double valorInicial = 1.0 / totalNodos;
+	    
+	    // Inicializar todos los nodos con la misma probabilidad
+	    for(String autor: th.keySet()) {
+	        rankings.put(autor, valorInicial);
+	    }
+	    
+	    double diferenciaAnterior = 1.0;
+	    double diferenciaActual = 0.0;
+	    boolean convergencia = false;
+	    
+	    while(!convergencia) {
+	        diferenciaActual = 0.0;
+	        
+	        for(String autor: rankings.keySet()) {
+	            double acumulador = 0.0;
+	            
+	            // Recorrer TODOS los nodos para encontrar cuáles apuntan hacia 'autor'
+	            for(String nodoOrigen: th.keySet()) {
+	                int indiceOrigen = th.get(nodoOrigen);
+	                
+	                // Verificar si 'nodoOrigen' tiene un enlace hacia 'autor'
+	                int indiceAutor = th.get(autor);
+	                if(adjList[indiceOrigen].contains(indiceAutor)) {
+	                    // Este nodo apunta hacia 'autor', contribuye con su PageRank
+	                    int enlacesSalientes = adjList[indiceOrigen].size();
+	                    acumulador += rankings.get(nodoOrigen) / enlacesSalientes;
+	                }
+	            }
+	            
+	            // Aplicar la fórmula de PageRank
+	            double nuevoValor = ((1.0 - factorAmortiguacion) / totalNodos) + (factorAmortiguacion * acumulador);
+	            
+	            // Calcular la diferencia absoluta para verificar convergencia
+	            diferenciaActual += Math.abs(rankings.get(autor) - nuevoValor);
+	            
+	            rankings.put(autor, nuevoValor);
+	        }
+	        
+	        // Verificar si el algoritmo ha convergido
+	        if(Math.abs(diferenciaAnterior - diferenciaActual) < 0.0001) {
+	            convergencia = true;
+	        } else {
+	            diferenciaAnterior = diferenciaActual;
+	        }
+	    }
+	    
+	    return rankings;
+	}
+
 }
+
+
+
+
+
+
+
+
