@@ -15,19 +15,6 @@ public class Graph {
       String[] keys;
       ArrayList<Integer>[] adjList;
 	
-	int numVertices;              // número de vértices en el grafo
-    String[] vertices;            // valores de los vértices
-    List<Integer>[] listaAdy;     // lista de adyacencia (más eficiente que matriz)
-    private Map<String, Integer> indiceVertice; // mapeo nombre -> índice
-
-      
-      public Graph() {
-    	  numVertices = 0;
-          vertices = new String[0];
-          listaAdy = new ArrayList[0];
-          indiceVertice = new HashMap<>();
-      }
-	
       
       public void crearGrafo(MapaAutores autores, MapaPubli publicaciones) {
 	  	// Post: crea el grafo desde la lista de autores
