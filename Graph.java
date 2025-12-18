@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -13,6 +14,19 @@ public class Graph {
       HashMap<String, Integer> th;
       String[] keys;
       ArrayList<Integer>[] adjList;
+	
+	int numVertices;              // número de vértices en el grafo
+    String[] vertices;            // valores de los vértices
+    List<Integer>[] listaAdy;     // lista de adyacencia (más eficiente que matriz)
+    private Map<String, Integer> indiceVertice; // mapeo nombre -> índice
+
+      
+      public Graph() {
+    	  numVertices = 0;
+          vertices = new String[0];
+          listaAdy = new ArrayList[0];
+          indiceVertice = new HashMap<>();
+      }
 	
       
       public void crearGrafo(MapaAutores autores, MapaPubli publicaciones) {
@@ -220,57 +234,93 @@ public class Graph {
 	}
 	
 	
+
 	public HashMap<String, Double> pageRank(){
+	    
 	    HashMap<String, Double> rankings = new HashMap<>();
 	    int totalNodos = th.keySet().size();
 	    double factorAmortiguacion = 0.85;
 	    double valorInicial = 1.0 / totalNodos;
-	    
+
+
 	    // Inicializar todos los nodos con la misma probabilidad
 	    for(String autor: th.keySet()) {
 	        rankings.put(autor, valorInicial);
 	    }
+
+	    // Crear HashMap inverso (índice -> nombre)
+	    HashMap<Integer, String> indiceANombre = new HashMap<>();
+	    for(String autor: th.keySet()) {
+	        indiceANombre.put(th.get(autor), autor);
+	    }
+
+	    // Crear grafo inverso (quién apunta a cada nodo)
+	    HashMap<String, ArrayList<String>> grafoInverso = new HashMap<>();
 	    
+	    // Inicializar el grafo inverso
+	    for(String autor: th.keySet()) {
+	        grafoInverso.put(autor, new ArrayList<>());
+	    }
+	    
+	    // Llenar el grafo inverso: para cada nodo, guardar quién le apunta
+	    for(String nodoOrigen: th.keySet()) {
+	        int indiceOrigen = th.get(nodoOrigen);
+	        
+	        // Para cada nodo al que apunta nodoOrigen
+	        for(Integer indiceDestino: adjList[indiceOrigen]) {
+	            // AHORA ES O(1) en vez de O(n)
+	            String nodoDestino = indiceANombre.get(indiceDestino);
+	            
+	            if(nodoDestino != null) {
+	                grafoInverso.get(nodoDestino).add(nodoOrigen);
+	            }
+	        }
+	    }
+
 	    double diferenciaAnterior = 1.0;
 	    double diferenciaActual = 0.0;
 	    boolean convergencia = false;
-	    
+	    int iteracion = 0;
+
 	    while(!convergencia) {
-	        diferenciaActual = 0.0;
+	        iteracion++;
+	        if(iteracion % 10 == 0) {
+	        }
 	        
+	        diferenciaActual = 0.0;
+	        HashMap<String, Double> nuevo = new HashMap<>();
+
 	        for(String autor: rankings.keySet()) {
 	            double acumulador = 0.0;
-	            
-	            // Recorrer TODOS los nodos para encontrar cuáles apuntan hacia 'autor'
-	            for(String nodoOrigen: th.keySet()) {
+
+	            // Solo recorrer los nodos que apuntan hacia 'autor'
+	            for(String nodoOrigen: grafoInverso.get(autor)) {
 	                int indiceOrigen = th.get(nodoOrigen);
+	                int enlacesSalientes = adjList[indiceOrigen].size();
 	                
-	                // Verificar si 'nodoOrigen' tiene un enlace hacia 'autor'
-	                int indiceAutor = th.get(autor);
-	                if(adjList[indiceOrigen].contains(indiceAutor)) {
-	                    // Este nodo apunta hacia 'autor', contribuye con su PageRank
-	                    int enlacesSalientes = adjList[indiceOrigen].size();
+	                if(enlacesSalientes > 0) {
 	                    acumulador += rankings.get(nodoOrigen) / enlacesSalientes;
 	                }
 	            }
-	            
+
 	            // Aplicar la fórmula de PageRank
 	            double nuevoValor = ((1.0 - factorAmortiguacion) / totalNodos) + (factorAmortiguacion * acumulador);
-	            
-	            // Calcular la diferencia absoluta para verificar convergencia
 	            diferenciaActual += Math.abs(rankings.get(autor) - nuevoValor);
-	            
-	            rankings.put(autor, nuevoValor);
+	            nuevo.put(autor, nuevoValor);
 	        }
 	        
-	        // Verificar si el algoritmo ha convergido
+	        rankings = nuevo;
+
 	        if(Math.abs(diferenciaAnterior - diferenciaActual) < 0.0001) {
 	            convergencia = true;
 	        } else {
 	            diferenciaAnterior = diferenciaActual;
 	        }
+	        
+	        if(iteracion > 1000) {
+	            break;
+	        }
 	    }
-	    
 	    return rankings;
 	}
 
